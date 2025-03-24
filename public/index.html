@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Summary Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .loading {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Weekly Summary Generator</h1>
+        <button id="generateBtn" onclick="generateSummary()">Generate Weekly Summary</button>
+        <div id="loading" class="loading">
+            Generating summary... Please wait...
+        </div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const CLOUD_FUNCTION_URL = 'https://europe-west1-tech-ops-production.cloudfunctions.net/weeklySummary';
+
+        async function generateSummary() {
+            const button = document.getElementById('generateBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+
+            // Disable button and show loading
+            button.disabled = true;
+            loading.style.display = 'block';
+            result.innerHTML = '';
+
+            try {
+                const response = await fetch(CLOUD_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        dry_run: false
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    result.className = 'success';
+                    result.innerHTML = `
+                        <h3>Success!</h3>
+                        <p>Weekly summary generated successfully.</p>
+                        <p>Processed ${data.results.length} entries.</p>
+                        <pre>${JSON.stringify(data.results, null, 2)}</pre>
+                    `;
+                } else {
+                    result.className = 'error';
+                    result.innerHTML = `
+                        <h3>Error</h3>
+                        <p>${data.error || 'Failed to generate weekly summary'}</p>
+                    `;
+                }
+            } catch (error) {
+                result.className = 'error';
+                result.innerHTML = `
+                    <h3>Error</h3>
+                    <p>Failed to call Cloud Function: ${error.message}</p>
+                `;
+            } finally {
+                // Re-enable button and hide loading
+                button.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html> 
